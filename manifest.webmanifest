@@ -1,0 +1,10 @@
+{
+  "name": "Manomitra Cognitive Care",
+  "short_name": "Manomitra",
+  "start_url": "./#login",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f9f9ff",
+  "theme_color": "#0e5a6f",
+  "icons": [{"src":"careloop-brand-emblem.png","sizes":"128x128","type":"image/png","purpose":"any maskable"}]
+}

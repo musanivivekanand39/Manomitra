@@ -1,0 +1,75 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function me() { return get(/databases/$(database)/documents/users/$(request.auth.uid)); }
+    function roleIs(role) { return signedIn() && me().data.role == role; }
+    function isPatient(patientId) { return signedIn() && request.auth.uid == patientId; }
+    function hasActiveLink(patientId) {
+      return signedIn() && exists(/databases/$(database)/documents/careLinks/$(patientId + '_' + request.auth.uid))
+        && get(/databases/$(database)/documents/careLinks/$(patientId + '_' + request.auth.uid)).data.status == 'active';
+    }
+    function canViewPatient(patientId) {
+      return isPatient(patientId) || hasActiveLink(patientId);
+    }
+
+    match /users/{userId} {
+      allow create: if signedIn() && request.auth.uid == userId
+        && request.resource.data.role in ['patient','caretaker','relative','doctor'];
+      allow read, update: if signedIn() && request.auth.uid == userId;
+      allow delete: if false;
+    }
+    match /careLinks/{linkId} {
+      allow read: if signedIn() && (resource.data.patientId == request.auth.uid || resource.data.memberId == request.auth.uid);
+      allow create: if signedIn() && (
+        (request.resource.data.patientId == request.auth.uid
+          && request.resource.data.memberRole == 'caretaker')
+        || (request.resource.data.memberId == request.auth.uid
+          && request.resource.data.memberRole in ['relative','doctor']
+          && roleIs(request.resource.data.memberRole)
+          && exists(/databases/$(database)/documents/relativeInvites/$(request.resource.data.inviteCode))
+          && get(/databases/$(database)/documents/relativeInvites/$(request.resource.data.inviteCode)).data.status == 'available'
+          && get(/databases/$(database)/documents/relativeInvites/$(request.resource.data.inviteCode)).data.patientId == request.resource.data.patientId));
+      allow update: if signedIn() && (resource.data.patientId == request.auth.uid
+        || (roleIs('caretaker') && resource.data.memberId == request.auth.uid));
+      allow delete: if signedIn() && (resource.data.patientId == request.auth.uid || resource.data.memberId == request.auth.uid);
+    }
+    match /patientProfiles/{profileId} {
+      allow create: if roleIs('caretaker') && request.resource.data.caretakerId == request.auth.uid;
+      allow read: if signedIn() && (resource.data.caretakerId == request.auth.uid
+        || resource.data.patientId == request.auth.uid || hasActiveLink(resource.data.patientId));
+      allow update: if signedIn() && (resource.data.caretakerId == request.auth.uid
+        || (resource.data.status == 'awaiting_patient_signup' && request.resource.data.patientId == request.auth.uid));
+      allow delete: if roleIs('caretaker') && resource.data.caretakerId == request.auth.uid;
+    }
+    match /patientInvites/{code} {
+      allow read: if signedIn();
+      allow create: if roleIs('caretaker') && request.resource.data.caretakerId == request.auth.uid;
+      allow update: if signedIn() && (resource.data.caretakerId == request.auth.uid
+        || request.resource.data.claimedBy == request.auth.uid);
+      allow delete: if roleIs('caretaker') && resource.data.caretakerId == request.auth.uid;
+    }
+    match /relativeInvites/{code} {
+      allow read: if signedIn();
+      allow create: if roleIs('caretaker') && request.resource.data.caretakerId == request.auth.uid;
+      allow update: if signedIn() && (resource.data.caretakerId == request.auth.uid
+        || request.resource.data.claimedBy == request.auth.uid);
+      allow delete: if roleIs('caretaker') && resource.data.caretakerId == request.auth.uid;
+    }
+    match /patients/{patientId}/{subCollection}/{documentId} {
+      allow read: if canViewPatient(patientId);
+      allow create, update: if isPatient(patientId)
+        || (hasActiveLink(patientId) && roleIs('caretaker') && subCollection in ['stories','emergencyContacts','reminders','notifications']);
+      allow delete: if isPatient(patientId) && subCollection != 'chatHistory';
+      allow delete: if hasActiveLink(patientId) && roleIs('caretaker') && subCollection == 'chatHistory';
+    }
+    match /patients/{patientId}/private/{documentId} {
+      allow read: if canViewPatient(patientId);
+      allow write: if isPatient(patientId) || (hasActiveLink(patientId) && roleIs('caretaker'));
+    }
+    match /questionBank/{questionId} {
+      allow read: if signedIn();
+      allow write: if roleIs('doctor');
+    }
+  }
+}

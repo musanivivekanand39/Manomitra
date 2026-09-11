@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-labelledby="t d">
+ <title id="t">Default profile for an older man</title><desc id="d">Neutral illustrated avatar</desc>
+ <rect width="240" height="240" rx="120" fill="#e4f3ec"/><circle cx="120" cy="93" r="48" fill="#a9684b"/>
+ <path d="M73 87c4-45 26-65 49-65 28 0 47 20 48 61-20-16-64-21-97 4Z" fill="#e8edf0"/>
+ <circle cx="102" cy="94" r="4" fill="#293845"/><circle cx="138" cy="94" r="4" fill="#293845"/><path d="M103 119q17 11 34 0" fill="none" stroke="#60382e" stroke-width="4" stroke-linecap="round"/><path d="M93 113q27 20 54 0" fill="none" stroke="#e7eaec" stroke-width="7"/>
+ <path d="M43 240c3-63 31-96 77-96s74 33 77 96" fill="#2d6953"/><path d="m103 150 17 27 17-27" fill="#f9f9ff"/>
+</svg>

@@ -1,0 +1,8 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Manomitra currently stores a compressed profile image in Firestore,
+    // so Cloud Storage is not required. Keep Storage locked if it is unused.
+    match /{allPaths=**} { allow read, write: if false; }
+  }
+}

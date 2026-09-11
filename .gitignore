@@ -1,0 +1,26 @@
+# Local tooling and editor files
+.vscode/
+.idea/
+.codex/
+.agents/
+
+# Firebase local state and emulator data
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# Dependency and build output
+node_modules/
+dist/
+build/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local environment secrets
+.env
+.env.*
+!.env.example
