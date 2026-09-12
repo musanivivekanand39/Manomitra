@@ -20,3 +20,6 @@
 .patient-card-delete .ui-icon{width:30px;height:30px;stroke:#c62828;stroke-width:2}.patient-card-delete:hover,.patient-card-delete:focus-visible{background:#ffe0e0}
 .relative-patient-card{display:flex;align-items:center;gap:22px}.relative-patient-card>div{flex:1;min-width:0}
 @media(max-width:600px){.patient-showcase-card{padding:15px;border-radius:18px}.patient-showcase-card .patient-open{min-height:94px;padding-right:76px;gap:13px}.patient-showcase-card .patient-photo{width:78px;height:78px;flex-basis:78px;border-width:3px}.patient-showcase-card h2,.patient-showcase-card h3{font-size:21px;margin-bottom:5px}.patient-card-meta{font-size:14px;gap:6px;margin-bottom:7px}.patient-card-meta .ui-icon{width:18px;height:18px}.patient-card-meta i{height:20px}.connection-chip{padding:6px 10px;font-size:13px}.patient-card-delete{right:47px;width:40px;height:40px;border-radius:11px}.patient-card-delete .ui-icon{width:23px;height:23px}.patient-showcase-card .open-arrow{right:14px;font-size:34px}.relative-patient-card{align-items:center;gap:13px}.relative-patient-card .large-photo{width:84px;height:84px;flex-basis:84px}}
+
+/* Compact empty conversation state */
+.compact-empty{padding:18px 20px}.compact-empty p{margin:0}
