@@ -1,4 +1,4 @@
-const CACHE='manomitra-v20';
+﻿const CACHE='manomitra-v25';
 const FILES=['./','./index.html','./styles.css','./prototype-integrations.css','./app.js','./question-bank.js','./firebase-config.js','./firebase-service.js','./manifest.webmanifest','./careloop-brand-emblem.png','./default-profile-woman.svg','./default-profile-man.svg'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
@@ -11,3 +11,7 @@ self.addEventListener('fetch',event=>{
   }
   event.respondWith(caches.match(event.request).then(hit=>hit||fetch(event.request).then(response=>{const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(event.request,copy));return response})));
 });
+
+
+
+

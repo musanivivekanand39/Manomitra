@@ -1,4 +1,4 @@
-rules_version = '2';
+﻿rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
@@ -20,7 +20,8 @@ service cloud.firestore {
       allow delete: if false;
     }
     match /careLinks/{linkId} {
-      allow read: if signedIn() && (resource.data.patientId == request.auth.uid || resource.data.memberId == request.auth.uid);
+      allow read: if signedIn() && (resource.data.patientId == request.auth.uid || resource.data.memberId == request.auth.uid
+        || (roleIs('caretaker') && resource.data.caretakerId == request.auth.uid));
       allow create: if signedIn() && (
         (request.resource.data.patientId == request.auth.uid
           && request.resource.data.memberRole == 'caretaker')
@@ -32,7 +33,8 @@ service cloud.firestore {
           && get(/databases/$(database)/documents/relativeInvites/$(request.resource.data.inviteCode)).data.patientId == request.resource.data.patientId));
       allow update: if signedIn() && (resource.data.patientId == request.auth.uid
         || (roleIs('caretaker') && resource.data.memberId == request.auth.uid));
-      allow delete: if signedIn() && (resource.data.patientId == request.auth.uid || resource.data.memberId == request.auth.uid);
+      allow delete: if signedIn() && (resource.data.patientId == request.auth.uid || resource.data.memberId == request.auth.uid
+        || (roleIs('caretaker') && resource.data.caretakerId == request.auth.uid));
     }
     match /patientProfiles/{profileId} {
       allow create: if roleIs('caretaker') && request.resource.data.caretakerId == request.auth.uid;
@@ -61,7 +63,8 @@ service cloud.firestore {
       allow create, update: if isPatient(patientId)
         || (hasActiveLink(patientId) && roleIs('caretaker') && subCollection in ['stories','emergencyContacts','reminders','notifications']);
       allow delete: if isPatient(patientId) && subCollection != 'chatHistory';
-      allow delete: if hasActiveLink(patientId) && roleIs('caretaker') && subCollection == 'chatHistory';
+      allow delete: if hasActiveLink(patientId) && roleIs('caretaker')
+        && subCollection in ['chatHistory','reminders','stories'];
     }
     match /patients/{patientId}/private/{documentId} {
       allow read: if canViewPatient(patientId);
@@ -73,3 +76,5 @@ service cloud.firestore {
     }
   }
 }
+
+
