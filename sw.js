@@ -1,5 +1,5 @@
-﻿const CACHE='manomitra-v33';
-const FILES=['./','./index.html','./styles.css','./prototype-integrations.css','./app.js','./question-bank.js','./firebase-config.js','./firebase-service.js','./manifest.webmanifest','./careloop-brand-emblem.png','./default-profile-woman.svg','./default-profile-man.svg'];
+﻿const CACHE='manomitra-v35';
+const FILES=['./','./index.html','./styles.css','./prototype-integrations.css','./app.js','./question-bank.js','./story-bank.js','./firebase-config.js','./firebase-service.js','./manifest.webmanifest','./careloop-brand-emblem.png','./default-profile-woman.svg','./default-profile-man.svg'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',event=>{
