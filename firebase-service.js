@@ -4,11 +4,12 @@ import { getFirestore, doc, setDoc, addDoc, getDoc, getDocs, deleteDoc, collecti
 
 const cfg=window.CARELOOP_FIREBASE_CONFIG||{};
 const configured=cfg.apiKey&&!cfg.apiKey.startsWith('YOUR_');
-let auth=null,db=null,currentProfile=null;
+let auth=null,db=null,currentProfile=null,registrationInFlight=false;
 let resolveReady;const ready=new Promise(r=>resolveReady=r);
+function publishAuthState(user,profile=currentProfile){currentProfile=profile||null;const detail={user,profile:currentProfile};resolveReady(detail);window.dispatchEvent(new CustomEvent('care-firebase-auth',{detail}))}
 if(configured){
   const app=initializeApp(cfg);auth=getAuth(app);db=getFirestore(app);
-  onAuthStateChanged(auth,async user=>{currentProfile=user?(await getDoc(doc(db,'users',user.uid))).data()||null:null;const detail={user,profile:currentProfile};resolveReady(detail);window.dispatchEvent(new CustomEvent('care-firebase-auth',{detail}))});
+  onAuthStateChanged(auth,async user=>{if(registrationInFlight&&user)return;let profile=user?(await getDoc(doc(db,'users',user.uid))).data()||null:null;publishAuthState(user,profile)});
 }else resolveReady({user:null,profile:null});
 const must=()=>{if(!configured)throw new Error('Firebase is not configured yet. Add your web configuration to firebase-config.js.');};
 const uid=()=>auth?.currentUser?.uid;
@@ -18,13 +19,13 @@ async function signUp({email,password,name,role,caretakerId,inviteCode}){
   email=email.trim().toLowerCase();name=name.trim();inviteCode=inviteCode?.trim().toUpperCase();
   if(role==='patient'&&(!caretakerId||!inviteCode))throw new Error('Caretaker ID and patient invite code are required.');
   if(['relative','doctor'].includes(role)&&!inviteCode)throw new Error('A caretaker invite code is required.');
-  let c;
-  try{c=await createUserWithEmailAndPassword(auth,email,password)}
+  let c,createdNewUser=false;registrationInFlight=true;
+  try{c=await createUserWithEmailAndPassword(auth,email,password);createdNewUser=true}
   catch(error){
-    if(error.code!=='auth/email-already-in-use')throw error;
+    if(error.code!=='auth/email-already-in-use'){registrationInFlight=false;throw error;}
     c=await signInWithEmailAndPassword(auth,email,password);
     const existing=await getDoc(doc(db,'users',c.user.uid));
-    if(existing.exists()){await signOut(auth);throw new Error('An account already exists for this email. Use Login instead.')}
+    if(existing.exists()){registrationInFlight=false;await signOut(auth);throw new Error('An account already exists for this email. Use Login instead.')}
   }
   try{
     let invite=null,inviteRef=null;
@@ -55,8 +56,8 @@ async function signUp({email,password,name,role,caretakerId,inviteCode}){
       await setDoc(doc(db,'careLinks',`${invite.patientId}_${c.user.uid}`),{patientId:invite.patientId,memberId:c.user.uid,caretakerId:invite.caretakerId,memberName:name,memberEmail:email,memberRole:role,status:'active',inviteCode,createdAt:serverTimestamp()});
       await setDoc(inviteRef,{status:'claimed',claimedBy:c.user.uid,claimedAt:serverTimestamp()},{merge:true});
     } else await setDoc(doc(db,'users',c.user.uid),profile);
-    currentProfile={...profile,createdAt:null};return {user:c.user,profile:currentProfile};
-  }catch(error){await deleteUser(c.user).catch(()=>{});throw error}
+    currentProfile={...profile,createdAt:null};registrationInFlight=false;publishAuthState(c.user,currentProfile);return {user:c.user,profile:currentProfile};
+  }catch(error){registrationInFlight=false;if(createdNewUser)await deleteUser(c.user).catch(()=>{});else await signOut(auth).catch(()=>{});throw error}
 }
 async function signIn(email,password){must();const c=await signInWithEmailAndPassword(auth,email,password),snap=await getDoc(doc(db,'users',c.user.uid));if(!snap.exists()){await signOut(auth);throw new Error('This login exists in Authentication but has no Manomitra profile in Firestore. Create a new account in Manomitra.')}currentProfile=snap.data();if(currentProfile.role==='caregiver'||currentProfile.role==='health'){currentProfile.role=currentProfile.role==='caregiver'?'caretaker':'doctor';await setDoc(doc(db,'users',c.user.uid),{role:currentProfile.role},{merge:true})}return {user:c.user,profile:currentProfile}}
 async function savePatientRecord(kind,data,patientId=uid()){must();if(!patientId)throw new Error('Sign in first');return addDoc(collection(db,'patients',patientId,kind),{...data,patientId,createdAt:serverTimestamp()})}
