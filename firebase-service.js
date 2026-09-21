@@ -1,6 +1,6 @@
 ﻿import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, onAuthStateChanged, deleteUser } from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js';
-import { getFirestore, doc, setDoc, addDoc, getDoc, getDocs, deleteDoc, collection, collectionGroup, query, where, orderBy, serverTimestamp, arrayUnion, increment } from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js';
+import { getFirestore, doc, setDoc, addDoc, getDoc, getDocs, deleteDoc, collection, collectionGroup, query, where, orderBy, serverTimestamp, arrayUnion, increment, writeBatch } from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js';
 
 const cfg=window.CARELOOP_FIREBASE_CONFIG||{};
 const configured=cfg.apiKey&&!cfg.apiKey.startsWith('YOUR_');
@@ -43,10 +43,12 @@ async function signUp({email,password,name,role,caretakerId,inviteCode}){
     const profile={name,email,role,createdAt:serverTimestamp()};
     if(role==='patient'){
       profile.caretakerId=invite.caretakerId;profile.patientDraftId=invite.patientDraftId;
-      await setDoc(doc(db,'users',c.user.uid),profile);
-      await setDoc(doc(db,'careLinks',`${c.user.uid}_${invite.caretakerId}`),{patientId:c.user.uid,memberId:invite.caretakerId,memberRole:'caretaker',status:'active',createdAt:serverTimestamp()});
-      await setDoc(doc(db,'patientProfiles',invite.patientDraftId),{patientId:c.user.uid,status:'active'},{merge:true});
-      await setDoc(inviteRef,{status:'claimed',claimedBy:c.user.uid,claimedAt:serverTimestamp()},{merge:true});
+      const batch=writeBatch(db);
+      batch.set(doc(db,'users',c.user.uid),profile);
+      batch.set(doc(db,'careLinks',`${c.user.uid}_${invite.caretakerId}`),{patientId:c.user.uid,memberId:invite.caretakerId,memberRole:'caretaker',status:'active',createdAt:serverTimestamp()});
+      batch.set(doc(db,'patientProfiles',invite.patientDraftId),{patientId:c.user.uid,status:'active'},{merge:true});
+      batch.set(inviteRef,{status:'claimed',claimedBy:c.user.uid,claimedAt:serverTimestamp()},{merge:true});
+      await batch.commit();
     } else if(['relative','doctor'].includes(role)){
       profile.patientId=invite.patientId;profile.caretakerId=invite.caretakerId;profile.inviteCode=inviteCode;
       await setDoc(doc(db,'users',c.user.uid),profile);

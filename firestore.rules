@@ -48,14 +48,18 @@ service cloud.firestore {
       allow read: if signedIn();
       allow create: if roleIs('caretaker') && request.resource.data.caretakerId == request.auth.uid;
       allow update: if signedIn() && (resource.data.caretakerId == request.auth.uid
-        || request.resource.data.claimedBy == request.auth.uid);
+        || (resource.data.status == 'available'
+          && request.resource.data.status == 'claimed'
+          && request.resource.data.claimedBy == request.auth.uid));
       allow delete: if roleIs('caretaker') && resource.data.caretakerId == request.auth.uid;
     }
     match /relativeInvites/{code} {
       allow read: if signedIn();
       allow create: if roleIs('caretaker') && request.resource.data.caretakerId == request.auth.uid;
       allow update: if signedIn() && (resource.data.caretakerId == request.auth.uid
-        || request.resource.data.claimedBy == request.auth.uid);
+        || (resource.data.status == 'available'
+          && request.resource.data.status == 'claimed'
+          && request.resource.data.claimedBy == request.auth.uid));
       allow delete: if roleIs('caretaker') && resource.data.caretakerId == request.auth.uid;
     }
     match /patients/{patientId}/{subCollection}/{documentId} {
