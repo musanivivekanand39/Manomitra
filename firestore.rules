@@ -64,8 +64,9 @@ service cloud.firestore {
     }
     match /patients/{patientId}/{subCollection}/{documentId} {
       allow read: if canViewPatient(patientId);
-      allow create, update: if isPatient(patientId)
-        || (hasActiveLink(patientId) && roleIs('caretaker') && subCollection in ['stories','emergencyContacts','reminders','notifications']);
+      allow create, update: if (isPatient(patientId) && subCollection != 'appointments')
+        || (hasActiveLink(patientId) && roleIs('caretaker') && subCollection in ['stories','emergencyContacts','reminders','notifications'])
+        || (hasActiveLink(patientId) && roleIs('doctor') && subCollection == 'appointments');
       allow delete: if isPatient(patientId) && subCollection != 'chatHistory';
       allow delete: if hasActiveLink(patientId) && roleIs('caretaker')
         && subCollection in ['chatHistory','reminders','stories'];
